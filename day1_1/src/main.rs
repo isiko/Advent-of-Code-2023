@@ -10,5 +10,5 @@ fn main() {
         sum += num;
     });
 
-    println!("{}", sum);
+    println!("Day 1, Task 1: {}", sum);
 }

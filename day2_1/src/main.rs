@@ -104,5 +104,5 @@ fn main() {
         }
     });
 
-    println!("{}", sum);
+    println!("Day 2, Task 1: {}", sum);
 }

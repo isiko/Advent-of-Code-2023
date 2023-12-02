@@ -102,5 +102,5 @@ fn main() {
         acc + power
     });
 
-    println!("{}", sum);
+    println!("Day 2, Task 2: {}", sum);
 }

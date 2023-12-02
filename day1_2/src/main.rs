@@ -7,7 +7,7 @@ fn main() {
 
         sum += first * 10 + last;
     });
-    println!("{}", sum);
+    println!("Day 1, Task 2: {}", sum);
 }
 
 fn get_first_num(line: &str) -> (usize, String) {
