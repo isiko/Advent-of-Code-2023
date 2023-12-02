@@ -1,6 +1,7 @@
 use regex::Regex;
 
 struct Game {
+    #[allow(dead_code)]
     pub id: u32,
     pub throws: Vec<Throw>,
 }
@@ -86,7 +87,7 @@ impl Throw {
 }
 
 fn main() {
-    let input = include_str!("./input.1");
+    let input = include_str!("./input");
 
     let sum = input.lines().map(|line| {
         let game = Game::parse(line);
@@ -101,5 +102,5 @@ fn main() {
         acc + power
     });
 
-    println!("Sum: {}", sum);
+    println!("{}", sum);
 }

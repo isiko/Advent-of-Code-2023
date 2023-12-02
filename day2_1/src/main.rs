@@ -86,7 +86,7 @@ impl Throw {
 }
 
 fn main() {
-    let input = include_str!("./input.1");
+    let input = include_str!("./input");
 
     let sum = input.lines().map(|line| {
         let game = Game::parse(line);
@@ -104,5 +104,5 @@ fn main() {
         }
     });
 
-    println!("Sum: {}", sum);
+    println!("{}", sum);
 }

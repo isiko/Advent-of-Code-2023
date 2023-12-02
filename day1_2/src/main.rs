@@ -5,11 +5,9 @@ fn main() {
         let first = to_value(&get_first_num(line).1);
         let last = to_value(&get_last_num(line).1);
 
-        println!("+ {}{}", &first, &last);
-
         sum += first * 10 + last;
     });
-    println!("= {}", sum);
+    println!("{}", sum);
 }
 
 fn get_first_num(line: &str) -> (usize, String) {
