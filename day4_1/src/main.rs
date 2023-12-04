@@ -36,14 +36,11 @@ impl Card {
         }
     }
 
-    pub fn get_score(&self) -> u32 {
-        let mut score = 0;
-        for num in &self.own_nums {
-            if self.winning_nums.contains(&num) {
-                score = if score == 0 { 1 } else { score * 2 }
-            }
-        }
-        score
+    pub fn get_winning_nums(&self) -> u32 {
+        self.own_nums
+            .iter()
+            .filter(|n| self.winning_nums.contains(n))
+            .count() as u32
     }
 }
 
@@ -52,7 +49,12 @@ fn main() {
 
     let cards: Vec<Card> = input.lines().map(|s| Card::from_str(s)).collect();
 
-    let score = cards.iter().map(|c| c.get_score()).sum::<u32>();
+    let score = cards
+        .iter()
+        .map(|c| c.get_winning_nums())
+        .filter(|s| *s > 0)
+        .map(|s| 2_u32.pow(s - 1))
+        .sum::<u32>();
 
     println!("Day 4, Task 1: {}", score);
 }
