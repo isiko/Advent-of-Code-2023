@@ -20,40 +20,25 @@ impl Game {
             .split("; ")
             .map(|throw| Throw::parse(throw))
             .collect();
-        Game {
-            id,
-            throws,
-        }
+        Game { id, throws }
     }
 
-    pub fn max_red(&self) -> u8 {
-        let mut max = 0;
+    pub fn max_rgb(&self) -> (u8, u8, u8) {
+        let mut max_red = 0;
+        let mut max_green = 0;
+        let mut max_blue = 0;
         for throw in &self.throws {
-            if throw.red > max {
-                max = throw.red;
+            if throw.red > max_red {
+                max_red = throw.red;
+            }
+            if throw.green > max_green {
+                max_green = throw.green;
+            }
+            if throw.blue > max_blue {
+                max_blue = throw.blue;
             }
         }
-        max
-    }
-
-    pub fn max_green(&self) -> u8 {
-        let mut max = 0;
-        for throw in &self.throws {
-            if throw.green > max {
-                max = throw.green;
-            }
-        }
-        max
-    }
-
-    pub fn max_blue(&self) -> u8 {
-        let mut max = 0;
-        for throw in &self.throws {
-            if throw.blue > max {
-                max = throw.blue;
-            }
-        }
-        max
+        (max_red, max_green, max_blue)
     }
 }
 
@@ -64,43 +49,45 @@ struct Throw {
 }
 
 impl Throw {
-    const REGEX: &'static str = r"^(\d+) (red|green|blue)$";
-
     pub fn parse(input: &str) -> Throw {
-        let re = Regex::new(Throw::REGEX).unwrap();
-
-        input.split(", ").into_iter().map(|value| {
-            let captures = re.captures(value).unwrap();
-            let number = captures.get(1).unwrap().as_str().parse::<u8>().unwrap();
-            let color = captures.get(2).unwrap().as_str();
-            (number, color)
-        }).fold(Throw{red: 0, blue: 0, green: 0}, |mut acc, (number, color)| {
-            match color {
-                "red" => acc.red = number,
-                "green" => acc.green = number,
-                "blue" => acc.blue = number,
-                _ => panic!("Unknown color: {}", color),
-            }
-            acc
-        })
+        input
+            .split(", ")
+            .into_iter()
+            .map(|value| {
+                let split = value.split(" ").collect::<Vec<&str>>();
+                let number = split[0].parse::<u8>().unwrap();
+                let color = split[1];
+                (number, color)
+            })
+            .fold(
+                Throw {
+                    red: 0,
+                    blue: 0,
+                    green: 0,
+                },
+                |mut acc, (number, color)| {
+                    match color {
+                        "red" => acc.red = number,
+                        "green" => acc.green = number,
+                        "blue" => acc.blue = number,
+                        _ => panic!("Unknown color: {}", color),
+                    }
+                    acc
+                },
+            )
     }
 }
 
 fn main() {
     let input = include_str!("./input");
 
-    let sum = input.lines().map(|line| {
-        let game = Game::parse(line);
-
-        return game;
-    }).fold(0, |acc, game| {
-        let m_red = game.max_red();
-        let m_green = game.max_green();
-        let m_blue = game.max_blue();
-
-        let power = m_red as u32 * m_green as u32 * m_blue as u32;
-        acc + power
-    });
+    let sum = input
+        .lines()
+        .map(|line| Game::parse(line))
+        .map(|game| {
+            let (m_red, m_green, m_blue) = game.max_rgb();
+            m_red as u32 * m_green as u32 * m_blue as u32
+        }).sum::<u32>();
 
     println!("Day 2, Task 2: {}", sum);
 }

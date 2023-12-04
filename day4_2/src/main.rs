@@ -1,49 +1,29 @@
+use std::collections::HashSet;
+
 struct Card {
-    id: u32,
-    winning_nums: Vec<u32>,
-    own_nums: Vec<u32>,
+    winning_nums: HashSet<u32>,
+    own_nums: HashSet<u32>,
 }
 
 impl Card {
-    const REGEX: &'static str = r"^Card +(\d)+: *([\d ]+) \| *([\d ]+)$";
     pub fn from_str(s: &str) -> Card {
-        let re = regex::Regex::new(Card::REGEX).unwrap();
-        let caps = re.captures(s).unwrap();
-
-        let id = caps.get(1).unwrap().as_str().parse::<u32>().unwrap();
-        let winning_nums: Vec<u32> = caps
-            .get(2)
-            .unwrap()
-            .as_str()
+        let sets: Vec<HashSet<u32>> = s
             .replace("  ", " ")
-            .split(" ")
-            .map(|s| s.parse::<u32>().unwrap())
-            .collect();
-
-        let own_nums: Vec<u32> = caps
-            .get(3)
+            .split(": ")
+            .nth(1)
             .unwrap()
-            .as_str()
-            .replace("  ", " ")
-            .split(" ")
-            .map(|s| s.parse::<u32>().unwrap())
+            .split(" | ")
+            .map(|s| {
+                s.split(" ")
+                    .map(|s| s.parse::<u32>().unwrap())
+                    .collect::<HashSet<u32>>()
+            })
             .collect();
 
         Card {
-            id,
-            winning_nums,
-            own_nums,
+            winning_nums: sets[0].clone(),
+            own_nums: sets[1].clone(),
         }
-    }
-
-    pub fn get_score(&self) -> u32 {
-        let mut score = 0;
-        for num in &self.own_nums {
-            if self.winning_nums.contains(&num) {
-                score = if score == 0 { 1 } else { score * 2 }
-            }
-        }
-        score
     }
 
     pub fn get_winning_nums(&self) -> u32 {
