@@ -64,14 +64,6 @@ name = "day5_2"
 version = "0.1.0"
 
 [[package]]
-name = "day5_2_2"
-version = "0.1.0"
-
-[[package]]
-name = "day5_2_fast"
-version = "0.1.0"
-
-[[package]]
 name = "day6_1"
 version = "0.1.0"
 dependencies = [
