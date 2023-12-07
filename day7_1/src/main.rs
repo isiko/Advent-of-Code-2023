@@ -2,13 +2,17 @@ use std::collections::HashMap;
 
 fn main() {
     const INPUT: &str = include_str!("./input");
-    let mut hands = INPUT.lines().map(|line| Hand::new(line.to_string())).collect::<Vec<Hand>>();
+    let mut hands = INPUT
+        .lines()
+        .map(|line| Hand::new(line.to_string()))
+        .collect::<Vec<Hand>>();
     hands.sort();
 
-    let result = hands.iter().enumerate().map(|(i, x)| {
-        //println!("{}*{}: {:?}", i, x.bid, x);
-        x.bid * (i as u32 + 1)
-    }).sum::<u32>();
+    let result = hands
+        .iter()
+        .enumerate()
+        .map(|(i, x)| x.bid * (i as u32 + 1))
+        .sum::<u32>();
     assert_eq!(result, 247961593);
     println!("Day 7, Task 1: {}", result)
 }
@@ -17,6 +21,7 @@ fn main() {
 struct Hand {
     cards: Vec<Card>,
     bid: u32,
+    r#type: HandType,
 }
 
 impl Hand {
@@ -32,22 +37,25 @@ impl Hand {
 
         let bid = split.next().unwrap().parse::<u32>().unwrap();
 
-        Self { cards, bid }
+        Self {
+            bid,
+            r#type: HandType::from_cards(&cards),
+            cards,
+        }
     }
 }
 
 impl Ord for Hand {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        let self_hand_type = HandType::from_hand(self.clone());
-        let other_hand_type = HandType::from_hand(other.clone());
-
-        if self == other {
-            std::cmp::Ordering::Equal
-        } else if self_hand_type == other_hand_type {
-            let neq_card = self.cards.iter().zip(other.cards.iter()).find(|(s, o)| s.value != o.value).unwrap();
-            neq_card.0.value.cmp(&neq_card.1.value)
+        if self.r#type == other.r#type {
+            self.cards
+                .iter()
+                .zip(other.cards.iter())
+                .map(|(s, o)| s.value.cmp(&o.value))
+                .find(|x| *x != std::cmp::Ordering::Equal)
+                .unwrap_or(std::cmp::Ordering::Equal)
         } else {
-            self_hand_type.cmp(&other_hand_type)
+            self.r#type.cmp(&other.r#type)
         }
     }
 }
@@ -55,36 +63,39 @@ impl Ord for Hand {
 impl PartialOrd for Hand {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
-    } 
+    }
 }
 
 impl PartialEq for Hand {
     fn eq(&self, other: &Self) -> bool {
-        self.cards.iter().zip(other.cards.iter()).all(|(s, o)| s.value == o.value)
+        self.cards
+            .iter()
+            .zip(other.cards.iter())
+            .all(|(s, o)| s.value == o.value)
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum HandType {
-    FiveOfAKind,
-    FourOfAKind,
-    FullHouse,
-    ThreeOfAKind,
-    TwoPairs,
-    OnePair,
     HighCard,
+    OnePair,
+    ThreeOfAKind,
+    FullHouse,
+    FourOfAKind,
+    TwoPairs,
+    FiveOfAKind,
 }
 
 impl HandType {
     fn value(&self) -> u8 {
         match self {
-            HandType::FiveOfAKind => 8,
-            HandType::FourOfAKind => 7,
-            HandType::FullHouse => 6,
-            HandType::ThreeOfAKind => 5,
-            HandType::TwoPairs => 4,
-            HandType::OnePair => 3,
-            HandType::HighCard => 2,
+            HandType::HighCard => 0,
+            HandType::OnePair => 1,
+            HandType::TwoPairs => 2,
+            HandType::ThreeOfAKind => 3,
+            HandType::FullHouse => 4,
+            HandType::FourOfAKind => 5,
+            HandType::FiveOfAKind => 6,
         }
     }
 }
@@ -98,8 +109,7 @@ impl PartialEq for HandType {
 impl PartialOrd for HandType {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
-    } 
-    
+    }
 }
 
 impl Eq for HandType {}
@@ -113,8 +123,7 @@ impl Ord for HandType {
 }
 
 impl HandType {
-    fn from_hand(hand: Hand) -> HandType {
-        let cards = hand.cards;
+    fn from_cards(cards: &Vec<Card>) -> HandType {
         let labels = cards.iter().fold(HashMap::new(), |mut acc, card| {
             let counter = acc.entry(card.value).or_insert(0);
             *counter += 1;
@@ -122,19 +131,19 @@ impl HandType {
         });
 
         let found_label_amount = labels.values().filter(|&x| *x > 0).count();
-        let found_label_max = labels.values().max().unwrap();
+        let found_label_max = labels.values().max().unwrap_or(&0) + 0;
 
-        if found_label_max == &5 {
+        if found_label_max == 5 {
             HandType::FiveOfAKind
-        } else if found_label_max == &4 && found_label_amount == 2 {
+        } else if found_label_max == 4 && found_label_amount <= 2 {
             HandType::FourOfAKind
-        } else if found_label_max == &3 && found_label_amount == 2 {
+        } else if found_label_max == 3 && found_label_amount <= 2 {
             HandType::FullHouse
-        } else if found_label_max == &3 && found_label_amount == 3 {
+        } else if found_label_max == 3 && found_label_amount <= 3 {
             HandType::ThreeOfAKind
-        } else if found_label_max == &2 && found_label_amount == 3 {
+        } else if found_label_max == 2 && found_label_amount <= 3 {
             HandType::TwoPairs
-        } else if found_label_max == &2 && found_label_amount == 4 {
+        } else if found_label_max == 2 && found_label_amount <= 4 {
             HandType::OnePair
         } else {
             HandType::HighCard

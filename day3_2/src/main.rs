@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 fn main() {
     const INPUT: &str = include_str!("./input");
 
@@ -40,7 +42,7 @@ fn main() {
         });
     });
 
-    let parts: Vec<PartNumber> = possible_parts
+    let parts_hash: HashMap<(i32, i32), PartNumber> = possible_parts
         .into_iter()
         .filter(|part| {
             get_relative_indices(part.indecies[0], part.indecies[part.indecies.len() - 1])
@@ -54,23 +56,30 @@ fn main() {
                 .count()
                 > 0
         })
-        .collect();
+        .collect::<Vec<PartNumber>>()
+        .iter()
+        .map(|part| part.indecies.iter().map(move |cord| (cord, part)))
+        .flatten()
+        .fold(HashMap::new(), |mut acc, (cord, part)| {
+            acc.insert(*cord, part.clone());
+            acc
+        });
 
     let result = possible_gears
         .into_iter()
         .map(|mut gear| {
             let check_cords = get_relative_indices(gear.cords, gear.cords);
-            gear.parts = parts
-                .clone()
-                .into_iter()
-                .filter(|part| {
-                    part.indecies
-                        .iter()
-                        .filter(|cords| check_cords.contains(cords))
-                        .count()
-                        > 0
-                })
+            gear.parts = check_cords
+                .iter()
+                .flat_map(|cord| parts_hash.get(&cord))
+                .cloned()
                 .collect();
+            gear.parts.sort_by_key(|part| part.value);
+            gear.parts.dedup();
+            gear
+        })
+        .map(|gear| {
+            //println!("{:?}", gear);
             gear
         })
         .filter(|gear| gear.parts.len() == 2)
@@ -93,10 +102,16 @@ fn get_relative_indices(start: (i32, i32), end: (i32, i32)) -> Vec<(i32, i32)> {
     result
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 struct PartNumber {
     value: u32,
     indecies: Vec<(i32, i32)>,
+}
+
+impl PartialEq<u32> for PartNumber {
+    fn eq(&self, other: &u32) -> bool {
+        self.value == *other
+    }
 }
 
 #[derive(Clone, Debug)]

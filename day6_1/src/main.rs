@@ -13,10 +13,10 @@ fn main() {
         .map(|l| {
             l.split(" ")
                 .skip(1)
-                .map(|s| s.parse::<u32>().unwrap())
-                .collect::<Vec<u32>>()
+                .map(|s| s.parse::<u64>().unwrap())
+                .collect::<Vec<u64>>()
         })
-        .collect::<Vec<Vec<u32>>>();
+        .collect::<Vec<Vec<u64>>>();
 
     let result = les[0]
         .iter()
@@ -35,30 +35,32 @@ fn main() {
 }
 
 struct Race {
-    duration: u32,
-    distance: u32,
+    duration: u64,
+    distance: u64,
 }
 
 impl Race {
-    fn new(duration: u32, distance: u32) -> Self {
+    fn new(duration: u64, distance: u64) -> Self {
         Self { duration, distance }
     }
 
-    fn get_ways_to_win(&self) -> u32 {
+    fn get_ways_to_win(&self) -> u64 {
         let range = self.get_button_time_range();
         range.1 - range.0 + 1
     }
+    // Thanks to @tomoshiekah -> https://github.com/tomoshiekah/AoC/blob/75a816801e06a628f1b66bbce1e8c41aca54fc86/AoC2023/day06.py#L34-L52
+    fn get_button_time_range(&self) -> (u64, u64) {
+        let duration = self.duration as f64;
+        let distance = self.distance as f64;
 
-    fn get_button_time_range(&self) -> (u32, u32) {
-        let mut min: u32 = u32::MAX;
-        let mut max: u32 = self.duration;
-        for hold_time in 0..self.duration {
-            let travel_dist = hold_time * (self.duration - hold_time);
-            if self.distance < travel_dist {
-                min = min.min(hold_time);
-                max = hold_time;
-            }
+        let mut min = ((-duration + (duration.powf(2.) + 4. * -distance).sqrt()) / -2.).ceil();
+        let mut max = ((-duration - (duration.powf(2.) - 4. * distance).sqrt()) / -2.).floor();
+
+        if max * (duration - max) == distance {
+            min += 1.;
+            max -= 1.;
         }
-        (min, max)
+
+        (min as u64, max as u64)
     }
 }

@@ -1,5 +1,3 @@
-use regex::Regex;
-
 struct Game {
     #[allow(dead_code)]
     pub id: u32,
@@ -7,16 +5,10 @@ struct Game {
 }
 
 impl Game {
-    const REGEX: &'static str = r"^Game (\d+): ((((\d+ [^,;]+, )*(\d+ [^,;]+))(; )?)*)$";
-
     pub fn parse(input: &str) -> Game {
-        let re = Regex::new(Game::REGEX).unwrap();
-        let captures = re.captures(input).unwrap();
-        let id = captures.get(1).unwrap().as_str().parse::<u32>().unwrap();
-        let throws: Vec<Throw> = captures
-            .get(2)
-            .unwrap()
-            .as_str()
+        let captures = input.split(": ").collect::<Vec<&str>>();
+        let id = captures[0].split(" ").last().unwrap().parse::<u32>().unwrap();
+        let throws: Vec<Throw> = captures[1]
             .split("; ")
             .map(|throw| Throw::parse(throw))
             .collect();

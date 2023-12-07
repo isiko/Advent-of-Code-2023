@@ -33,16 +33,26 @@ impl Race {
         range.1 - range.0 + 1
     }
 
+    // Thanks to @tomoshiekah -> https://github.com/tomoshiekah/AoC/blob/75a816801e06a628f1b66bbce1e8c41aca54fc86/AoC2023/day06.py#L34-L52
     fn get_button_time_range(&self) -> (u64, u64) {
-        let mut min: u64 = u64::MAX;
-        let mut max: u64 = self.duration;
-        for hold_time in 0..self.duration {
-            let travel_dist = hold_time * (self.duration - hold_time);
-            if self.distance < travel_dist {
-                min = min.min(hold_time);
-                max = hold_time;
-            }
+        let duration = self.duration as f64;
+        let distance = self.distance as f64;
+
+        let mut min = ((-duration + (duration.powf(2.) + 4. * -distance).sqrt()) / -2.).ceil();
+        let mut max = ((-duration - (duration.powf(2.) - 4. * distance).sqrt()) / -2.).floor();
+
+        if max * (duration - max) == distance {
+            min += 1.;
+            max -= 1.;
         }
-        (min, max)
+
+        (min as u64, max as u64)
     }
+}
+
+#[test]
+fn test() {
+    assert_eq!(Race::new(7, 9).get_button_time_range(), (2, 5));
+    assert_eq!(Race::new(15, 40).get_button_time_range(), (4, 11));
+    assert_eq!(Race::new(30, 200).get_button_time_range(), (11, 19));
 }
