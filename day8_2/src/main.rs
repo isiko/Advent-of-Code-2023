@@ -37,27 +37,30 @@ fn main() {
     let mut graph = Graph::new(path.iter().collect::<String>(), nodes);
 
     let start_nodes = graph.get_start_nodes();
-    let mut states = start_nodes
+    let states = start_nodes
         .into_iter()
         .map(|s| {
             let s = SearchState((s.clone(), 0));
-            graph.get_next_final(&s)
+            graph.get_next_final(&s).0 .1
         })
-        .collect::<BTreeSet<SearchState>>();
-
-    loop {
-        //println!("States: {:?}", states);
-        let state = states.pop_first().unwrap();
-        if states.iter().all(|s| s.0 .1 == state.0 .1) {
-            states.insert(state);
-            break;
-        } else {
-            states.insert(graph.get_next_final(&state));
-        }
-    }
+        .collect::<BTreeSet<usize>>()
+        .into_iter()
+        .rev()
+        .fold(1, |mut acc, mut s| {
+            let start_acc = acc;
+            let start_s = s;
+            while acc != s {
+                if acc < s {
+                    acc += start_acc;
+                } else {
+                    s += start_s;
+                }
+            }
+            acc
+        });
     println!("Final States: {:?}", states);
 
-    let result = states.first().unwrap().0 .1;
+    let result = states;
     //assert_eq!(result, 22357);
     println!("Day 8, Task 2: {}", result);
 }
