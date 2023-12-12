@@ -1,35 +1,52 @@
+use std::{sync::mpsc, thread};
+
 fn main() {
     const INPUT: &str = include_str!("input");
-    let mut result = 0;
+    let (tx, rx) = mpsc::channel();
 
     for line in INPUT.lines() {
         if line.starts_with("//") {
             continue;
         }
-        let mut split = line.split(" ");
-        let data = split.next().unwrap();
-        let check = split
-            .next()
-            .unwrap()
-            .split(",")
-            .map(|g| g.parse::<u32>().unwrap())
-            .collect::<Vec<u32>>();
+        let line_tx = tx.clone();
+        thread::spawn(move || {
+            let mut split = line.split(" ");
+            let data = split.next().unwrap();
+            let check = split
+                .next()
+                .unwrap()
+                .split(",")
+                .map(|g| g.parse::<u32>().unwrap())
+                .collect::<Vec<u32>>();
 
-        let mut data_actual = data.to_string();
-        for _ in 0..4 {
-            data_actual.push('?');
-            data_actual.push_str(data);
-        }
+            let mut data_actual = data.to_string();
+            for _ in 0..4 {
+                data_actual.push('?');
+                data_actual.push_str(data);
+            }
 
-        let mut check_actual = check.clone();
-        check_actual.extend(check.clone());
-        check_actual.extend(check.clone());
-        check_actual.extend(check.clone());
-        check_actual.extend(check.clone());
+            let mut check_actual = check.clone();
+            check_actual.extend(check.clone());
+            check_actual.extend(check.clone());
+            check_actual.extend(check.clone());
+            check_actual.extend(check.clone());
 
-        let version = parse_line('.', data_actual.to_string(), check_actual.clone(), "".to_string());
-        println!("{} => {}", line, version);
-        result += version;
+            let version = parse_line(
+                '.',
+                data_actual.to_string(),
+                check_actual.clone(),
+                "".to_string(),
+            );
+            println!("{} => {}", line, version);
+            line_tx.send((line.to_string(), version)).unwrap();
+        });
+    }
+    let mut result = 0;
+    for recieved in rx {
+        let (line, output): (String, u32) = recieved;
+        println!("{} => {}", line, output);
+        result += output;
+        println!("Result: {}", result);
     }
 
     println!("Day 12 Task 1: {}", result);
