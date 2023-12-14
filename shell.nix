@@ -40,6 +40,7 @@ in
   pkgs.mkShell {
     packages = [
       pkgs.bacon
+      pkgs.cargo-flamegraph
     ];
     buildInputs = [
       rustc-wasm

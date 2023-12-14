@@ -1,75 +1,86 @@
+// 17788038834112
+use memoize::memoize;
 use rstest::rstest;
-use std::{sync::mpsc, thread};
 
 fn main() {
     const INPUT: &str = include_str!("input");
-    let (tx, rx) = mpsc::channel();
-
-    let mut started_threads = 0;
+    let mut result = 0;
 
     for line in INPUT.lines() {
         if line.starts_with("//") {
             continue;
         }
-        started_threads += 1;
-        let line_tx = tx.clone();
-        let mut split = line.split(" ");
-        let data = split.next().unwrap();
-        let check = split
-            .next()
-            .unwrap()
-            .split(",")
-            .map(|g| g.parse::<usize>().unwrap())
-            .collect::<Vec<usize>>();
 
-        let mut data_actual = data.to_string();
-        for _ in 0..4 {
-            data_actual.push('?');
-            data_actual.push_str(data);
-        }
-
-        let mut check_actual = check.clone();
-        check_actual.extend(check.clone());
-        check_actual.extend(check.clone());
-        check_actual.extend(check.clone());
-        check_actual.extend(check.clone());
-        thread::spawn(move || {
-            let version = parse_line(
-                '.',
-                data_actual.to_string(),
-                check_actual.clone(),
-                &"".to_string(),
-            );
-            //println!("{} => {}", line, version);
-            line_tx.send((line.to_string(), version)).unwrap();
-        });
-    }
-    let mut ended_threads = 0;
-    let mut result = 0;
-    for recieved in rx {
-        let (line, output): (String, usize) = recieved;
-        println!("{} => {}", line, output);
-        result += output;
-        ended_threads += 1;
-        println!(
-            "Result {} of {}: {}",
-            ended_threads, started_threads, result
-        );
+        let (data, check) = parse_line(line.to_string());
+        let (data, check) = times_5(data.to_string(), check);
+            let version = check_line('.', data.to_string(), check.clone());
+            result += version;
+            println!("{} => {}", line, version);
     }
 
     println!("Day 12 Task 1: {}", result);
 }
 
-fn parse_line(last_char: char, old_line: String, mut check: Vec<usize>, word: &String) -> usize {
+#[test]
+fn run_test_input(){
+    const TEST_INPUT: &str = "???.### 1,1,3
+.??..??...?##. 1,1,3
+?#?#?#?#?#?#?#? 1,3,1,6
+????.#...#... 4,1,1
+????.######..#####. 1,6,5
+?###???????? 3,2,1";
+
+    println!("{}", TEST_INPUT);
+
+    let mut result = 0;
+    for line in TEST_INPUT.lines() {
+        if line.starts_with("//") {
+            continue;
+        }
+
+        let (data, check) = parse_line(line.to_string());
+        let (data, check) = times_5(data.to_string(), check);
+        let version = check_line('.', data.to_string(), check.clone());
+        result += version;
+        println!("{} => {}", line, version);
+    }
+    assert_eq!(result, 525152);
+}
+
+fn times_5 (data: String, check: Vec<usize>) -> (String, Vec<usize>) {
+    let mut data5 = data.to_string();
+    let mut check5 = check.clone();
+    for _ in 0..4 {
+        data5.push('?');
+        data5.push_str(&data);
+
+        check5.extend(check.clone());
+    }
+    (data5, check5)
+}
+
+fn parse_line (line: String) -> (String, Vec<usize>) {
+    let mut split = line.split(" ");
+    let data = split.next().unwrap();
+    let check = split
+        .next()
+        .unwrap()
+        .split(",")
+        .map(|g| g.parse::<usize>().unwrap())
+        .collect::<Vec<usize>>();
+    (data.to_string(), check)
+}
+
+#[memoize]
+fn check_line(last_char: char, old_line: String, check: Vec<usize>) -> usize {
     if old_line.len() == 0 {
-        //println!("{}", word);
-        //println!("<============== Found =============>");
         return 1;
     } else {
         let mut q_sum = 0;
         let mut h_sum = 0;
         let mut line = "".to_string();
         let mut char = ' ';
+        let mut check = check.clone();
         for (i, c) in old_line.chars().enumerate() {
             match c {
                 '?' => {
@@ -107,7 +118,7 @@ fn parse_line(last_char: char, old_line: String, mut check: Vec<usize>, word: &S
 
         let check_sum = check.iter().sum::<usize>();
 
-        if !(h_sum..(h_sum + q_sum + 1)).contains(&check_sum) {
+        if !(check_sum >= h_sum && (h_sum + q_sum) >= check_sum) {
             return 0;
         }
 
@@ -122,16 +133,14 @@ fn parse_line(last_char: char, old_line: String, mut check: Vec<usize>, word: &S
                 let mut d_string = old_line;
                 d_string.replace_range(0..1, ".");
 
-                return parse_line(last_char, h_string, check.clone(), word)
-                    + parse_line(last_char, d_string, check, word);
+                return check_line(last_char, h_string, check.clone())
+                    + check_line(last_char, d_string, check);
             }
             _ => {
                 panic!("Unknown Character")
             }
         }
-        let mut word = word.clone();
-        word.push(char);
-        return parse_line(char, line, check, &word);
+        return check_line(char, line, check);
     }
 }
 
@@ -143,15 +152,41 @@ fn parse_line(last_char: char, old_line: String, mut check: Vec<usize>, word: &S
 #[case("????.######..#####. 1,6,5", 4)]
 #[case("?###???????? 3,2,1", 10)]
 fn test_line(#[case] line: String, #[case] expected: usize) {
-    let mut split = line.split(" ");
-    let data = split.next().unwrap();
-    let check = split
-        .next()
-        .unwrap()
-        .split(",")
-        .map(|g| g.parse::<usize>().unwrap())
-        .collect::<Vec<usize>>();
+    let (data, check) = parse_line(line.to_string());
 
-    let result = parse_line('.', data.to_string(), check.clone(), &"".to_string());
+    let result = check_line('.', data.to_string(), check.clone());
+    assert_eq!(result, expected);
+}
+
+#[rstest]
+#[case((".#", vec![1]), (".#?.#?.#?.#?.#", vec![1,1,1,1,1]))]
+#[case(("???.###", vec![1,1,3]), ("???.###????.###????.###????.###????.###", vec![1,1,3,1,1,3,1,1,3,1,1,3,1,1,3]))]
+fn test_input(#[case] data: (&str, Vec<usize>), #[case] expected: (&str, Vec<usize>)) {
+    let (data, check) = times_5(data.0.to_string(), data.1);
+    let (expected, expected_check) = expected;
+    assert_eq!(data, expected);
+    assert_eq!(check, expected_check);
+}
+
+#[rstest]
+#[case("???.### 1,1,3", ("???.###".to_string() , vec![1,1,3]))]
+fn test_parse_line(#[case] line: &str, #[case] expected: (String, Vec<usize>)) {
+    let result = parse_line(line.to_string());
+    let expected = (expected.0.to_string(), expected.1);
+    assert_eq!(result, expected);
+}
+
+#[rstest]
+#[case("???.### 1,1,3", 1)]
+#[case(".??..??...?##. 1,1,3", 16384)]
+#[case("?#?#?#?#?#?#?#? 1,3,1,6", 1)]
+#[case("????.#...#... 4,1,1", 16)]
+#[case("????.######..#####. 1,6,5", 2500)]
+#[case("?###???????? 3,2,1", 506250)]
+fn test_line_times_5(#[case] line: String, #[case] expected: usize) {
+    let (data, check) = parse_line(line.to_string());
+    let (data5, check5) = times_5(data, check);
+
+    let result = check_line('.', data5.to_string(), check5.clone());
     assert_eq!(result, expected);
 }
